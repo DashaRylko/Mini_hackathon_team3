@@ -405,48 +405,6 @@ wrap_plots(res_plot) +
 ```
 Из графика можно оценить распределение данной переменной. Также можем увидеть разницу в оценке среднего количества НЯ для разных групп лечения.
 
-# Анализ основного показателя (количество НЯ)
-
-```{r fig.width = 8, fig.height=3}
-(
-  ggplot(data_types, aes(
-    x = treat, y = nrAdvE, fill = treat
-  )) +
-    geom_boxplot(width = 0.5) +
-    geom_jitter(width = 0.2) +
-    theme_minimal() +
-    labs(
-      title = "Количество НЯ по типу лечения",
-      x = "Тип лечения",
-      y = "Количество НЯ",
-      fill = "Лечение"
-    ) +
-    scale_fill_brewer(palette = "Set2")
-)|
-  (data_types %>%
-     group_by(treat) %>%
-     summarise(
-       mean_nrAdvE = mean(nrAdvE),
-       sd = sd(nrAdvE),
-       se = se(nrAdvE),
-       ci_95_min = mean_nrAdvE - 1.96 * se,
-       ci_95_max = mean_nrAdvE + 1.96 * se
-     ) %>%
-     ggplot() +
-     geom_point(aes(x = treat, y = mean_nrAdvE, color = treat)) +
-     geom_errorbar(aes(
-       x = treat,
-       y = mean_nrAdvE,
-       ymin = ci_95_min,
-       ymax = ci_95_max,
-       color = treat
-     ), width = 0.5)+
-     scale_color_brewer(palette = "Set2")+
-     labs(title = "95% ДИ для среднего количества НЯ",
-          x = "Тип лечения", y = "Среднее",color = "Лечение")+
-     theme_minimal())
-```
-Из графика можно оценить распределение данной переменной. Также можем увидеть разницу в оценке среднего количества НЯ для разных групп лечения.
 
 ## 3 Визуальная оценка взаимосвязи между числом НЯ и собранными признаками пациентов
 
@@ -618,14 +576,7 @@ data %>%
 ```
 
 
-
 ## 4
-
-```{r}
-
-```
-
-## 4_2
 
 ```{r}
 #Количество НЯ и тип лечения
