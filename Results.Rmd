@@ -416,3 +416,75 @@ wrap_plots(res_plot) +
 
 ```
 
+## 4_2
+
+```{r}
+#Количество НЯ и тип лечения
+
+#anova
+anova_res <- aov(nrAdvE ~ treat, data = data_types)
+summary(anova_res)
+
+#t-test для d1 - placebo и d2 - placebo
+data_d1 <- data_types %>% 
+  filter(treat != 'd2')
+data_d2 <- data_types %>% 
+  filter(treat != 'd1')
+
+t.test(nrAdvE ~ treat, data = data_d1)
+t.test(nrAdvE ~ treat, data = data_d2)
+
+#линейная и generalized linear model
+levels(data_types$treat)
+data_types$treat <- relevel(data_types$treat, ref = "placebo")
+
+summary(glm(nrAdvE ~ treat, data = data_types))
+summary(lm(nrAdvE ~ treat, data = data_types))
+```
+```{r}
+#Количество НЯ и Возраст, Рост, Вес, ИМТ
+
+cor_test_age <- cor.test(data_types$nrAdvE, data$age, method = "spearman")
+cor_test_height <- cor.test(data_types$nrAdvE, data$height, method = "spearman")
+cor_test_weight <- cor.test(data_types$nrAdvE, data$weight, method = "spearman")
+cor_test_BMI <- cor.test(data_types$nrAdvE, data$BMI, method = "spearman")
+
+res <- data.frame()
+for(i in c(cor_test_age,cor_test_height,cor_test_weight,cor_test_BMI)){
+  res <- rbind(res,data.frame(
+  Correlation = i[estimate],
+  t_statistic = i$statistic,
+  df = i$parameter,
+  p_value = i$p.value,
+  CI_lower = i$conf.int[1],
+  CI_upper = i$conf.int[2]
+))
+}
+res
+```
+```{r}
+#Количество НЯ и пол, страна
+
+ttest_country <- t.test(nrAdvE ~ country, data = data_types)
+ttest_sex <- t.test(nrAdvE ~ sex, data = data_types)
+
+table_res_country <- data.frame(
+  t_statistic = ttest_country$statistic,
+  df = ttest_country$parameter,
+  p_value = ttest_country$p.value,
+  CI_lower = ttest_country$conf.int[1],
+  CI_upper = ttest_country$conf.int[2]
+)
+table_res_sex <- data.frame(
+  t_statistic = ttest_sex$statistic,
+  df = ttest_sex$parameter,
+  p_value = ttest_sex$p.value,
+  CI_lower = ttest_sex$conf.int[1],
+  CI_upper = ttest_sex$conf.int[2]
+)
+rbind(table_res_country,table_res_sex)
+```
+
+
+
+
