@@ -625,3 +625,92 @@ data %>%
 
 ```
 
+## 4_2
+
+```{r}
+#Количество НЯ и тип лечения
+
+#anova
+anova_res <- aov(nrAdvE ~ treat, data = data_types)
+summary(anova_res)
+
+#t-test для d1 - placebo и d2 - placebo
+data_d1 <- data_types %>% 
+  filter(treat != 'd2')
+data_d2 <- data_types %>% 
+  filter(treat != 'd1')
+
+t.test(nrAdvE ~ treat, data = data_d1)
+t.test(nrAdvE ~ treat, data = data_d2)
+
+#линейная и generalized linear model
+levels(data_types$treat)
+data_types$treat <- relevel(data_types$treat, ref = "placebo")
+
+summary(glm(nrAdvE ~ treat, data = data_types))
+summary(lm(nrAdvE ~ treat, data = data_types))
+```
+
+```{r}
+#Количество НЯ и Возраст, Рост, Вес, ИМТ
+
+cor_test_age <- cor.test(data_types$nrAdvE, data$age, method = "spearman")
+cor_test_height <- cor.test(data_types$nrAdvE, data$height, method = "spearman")
+cor_test_weight <- cor.test(data_types$nrAdvE, data$weight, method = "spearman")
+cor_test_BMI <- cor.test(data_types$nrAdvE, data$BMI, method = "spearman")
+
+cor_test_res <- rbind(`Количество НЯ и возраст` = data.frame(
+  Correlation = cor_test_age$estimate,
+  S_statistic = cor_test_age$statistic,
+  p_value = cor_test_age$p.value
+),
+`Количество НЯ и рост` = data.frame(
+  Correlation = cor_test_height$estimate,
+  S_statistic = cor_test_height$statistic,
+  p_value = cor_test_height$p.value
+),
+`Количество НЯ и вес` = data.frame(
+  Correlation = cor_test_weight$estimate,
+  S_statistic = cor_test_weight$statistic,
+  p_value = cor_test_weight$p.value
+),
+`Количество НЯ и ИМТ` = data.frame(
+  Correlation = cor_test_BMI$estimate,
+  S_statistic = cor_test_BMI$statistic,
+  p_value = cor_test_BMI$p.value
+))
+rownames_to_column(cor_test_res, var = "Переменные") %>% 
+  flextable() %>% 
+  set_table_properties(layout= "autofit",width=.9)
+
+```
+```{r}
+#Количество НЯ и пол, страна
+
+ttest_country <- t.test(nrAdvE ~ country, data = data_types)
+ttest_sex <- t.test(nrAdvE ~ sex, data = data_types)
+
+table_res_country <- data.frame(
+  t_statistic = ttest_country$statistic,
+  df = ttest_country$parameter,
+  p_value = ttest_country$p.value,
+  CI_lower = ttest_country$conf.int[1],
+  CI_upper = ttest_country$conf.int[2]
+)
+table_res_sex <- data.frame(
+  t_statistic = ttest_sex$statistic,
+  df = ttest_sex$parameter,
+  p_value = ttest_sex$p.value,
+  CI_lower = ttest_sex$conf.int[1],
+  CI_upper = ttest_sex$conf.int[2]
+)
+t_test_res <- rbind(`Количество НЯ и страна` = table_res_country,
+      `Количество НЯ и пол` = table_res_sex)
+rownames_to_column(t_test_res, var = "Переменные") %>% 
+  flextable() %>% 
+  set_table_properties(layout= "autofit",width=.9)
+```
+
+
+
+
