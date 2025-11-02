@@ -7,6 +7,11 @@ date: "2025-11-02"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r}
+data <- read.csv('data/CrohnD.csv')
+```
+
 ## 1
 
 
