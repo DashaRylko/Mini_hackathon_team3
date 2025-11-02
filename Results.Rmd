@@ -34,9 +34,103 @@ data <- read.csv('data/CrohnD.csv')
 
 ```
 
-## 4
+## 4. Методы однофакторного анализа.
+
+# Возраст и число нежелательных явлений
+```{r}
+library(broom)
+model_age <- lm(nrAdvE ~ age, data = data)
+
+# Резюме модели с коэффициентами и доверительными интервалами
+summary(model_age)
+tidy_model_age <- tidy(model_age, conf.int = TRUE)
+print(tidy_model_age)
+
+# Визуализация: scatterplot с линией регрессии
+ggplot(data, aes(x = age, y = nrAdvE)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(title = "Зависимость количества осложнений от возраста",
+       x = "Возраст",
+       y = "Количество осложнений (НЯ)") +
+  theme_minimal()
+```
+
+p-value 0.271 > 0.05, статистически не значим.
+
+# Индекс массы тела и  число нежелательных явлений
 
 ```{r}
 
+model_BMI <- lm(nrAdvE ~ BMI, data = data)
+
+# Резюме модели с коэффициентами и доверительными интервалами
+summary(model_BMI)
+tidy_model_BMI <- tidy(model_BMI, conf.int = TRUE)
+print(tidy_model_BMI)
+tidy(model_BMI, conf.int = TRUE) %>%
+  flextable() %>%
+  set_caption("Коэффициенты регрессии с доверительными интервалами") %>%
+  colformat_double(digits = 4) %>%
+  bg(bg = "#F2F2F2", part = "header") %>%
+  bold(part = "header")
+
+
+
+# Визуализация: scatterplot с линией регрессии
+ggplot(data, aes(x = age, y = nrAdvE)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(title = "Зависимость количества осложнений от возраста",
+       x = "Возраст",
+       y = "Количество осложнений (НЯ)") +
+  theme_minimal()
 ```
+
+p-value 0.0363 < 0.05, статистически значим. 95% ДИ: [0.007; 0.205].
+С увеличением индекса массы тела  на 1 единицу число НЯ увеличивается в среднем на 0.106 (клиническая значимость под вопросом)
+
+# вес и число нежелательных явлений
+
+```{r}
+
+model_weight <- lm(nrAdvE ~ weight, data = data)
+
+# Резюме модели с коэффициентами и доверительными интервалами
+summary(model_weight)
+tidy_model_weight <- tidy(model_weight, conf.int = TRUE)
+print(tidy_model_weight)
+tidy(model_weight, conf.int = TRUE) %>%
+  flextable() %>%
+  set_caption("Коэффициенты регрессии с доверительными интервалами") %>%
+  colformat_double(digits = 4) %>%
+  bg(bg = "#F2F2F2", part = "header") %>%
+  bold(part = "header")
+
+```
+
+p-value 0.792 > 0.05, статистически не значим. 95% ДИ: [-0.0307; 0.0401] включает 0
+
+# рост и число нежелательных явлений
+
+```{r}
+
+model_height <- lm(nrAdvE ~ height, data = data)
+
+# Резюме модели с коэффициентами и доверительными интервалами
+summary(model_height)
+tidy_model_height <- tidy(model_height, conf.int = TRUE)
+print(tidy_model_height)
+tidy(model_height, conf.int = TRUE) %>%
+  flextable() %>%
+  set_caption("Коэффициенты регрессии с доверительными интервалами") %>%
+  colformat_double(digits = 4) %>%
+  bg(bg = "#F2F2F2", part = "header") %>%
+  bold(part = "header")
+
+```
+
+p-value 0.012 < 0.05 - есть основания отвергнуть нулевую гипотезу
+95% ДИ: [-0.128; -0.016] -  не включает 0. 
+С увеличением роста на 1 см число нежелательных явлений уменьшается на 0.072 (клиническая значимость?)
 
