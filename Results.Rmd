@@ -589,6 +589,8 @@ data %>%
 
 ## 4 Однофакторный анализ
 
+#### Пуассоновская регрессия 
+
 ```{r}
 #Количество НЯ и тип лечения
 library(broom)
@@ -605,11 +607,17 @@ tidy_model_age <- tidy(model_treat, conf.int = TRUE) %>%
   mutate(across(c(estimate, std.error, statistic, conf.low, conf.high, p.value), 
                 ~ round(.x, 3)))
 tidy_model_age %>% 
+  mutate(term=case_when(term=="(Intercept)" ~ "Placebo",
+                        term=="treatd1" ~ "Drug 1",
+                        term=="treatd2" ~ "Drug 2"
+                        )) %>% 
   flextable() %>% 
   set_table_properties(layout= "autofit",width=.9)
 ```
+Наблюдается статистически значимое снижение количества НЯ в группе пациентов, принимавших препарат 1 по сравнению с группой пациентов, принимавших Плацебо (снижение количества НЯ на 40%, 95% ДИ: 0.13 - 0.76), не обнаружено различий в частоте НЯ среди пациентов, принимавших препарат 2 и принимавших Плацебо.
 
 
+#### Корреляционный анализ (количество НЯ + количественные признаки)
 ```{r}
 #Количество НЯ и Возраст, Рост, Вес, ИМТ
 
@@ -628,7 +636,7 @@ cor_test_res <- rbind(`Количество НЯ и возраст` = data.frame
   S_statistic = cor_test_height$statistic,
   p_value = cor_test_height$p.value
 ),
-`Количество НЯ и вес` = data.frame(
+`Количество НЯ и масса тела` = data.frame(
   Correlation = cor_test_weight$estimate,
   S_statistic = cor_test_weight$statistic,
   p_value = cor_test_weight$p.value
@@ -644,6 +652,11 @@ rownames_to_column(cor_test_res, var = "Переменные") %>%
   set_table_properties(layout= "autofit",width=.9)
 
 ```
+Не наблюдается значимых ассоциаций между количественными признаками - Масса тела, Возраст, Рост, ИМТ.
+
+
+
+#### Влияние качествнных признаков на количесвто НЯ
 ```{r}
 #Количество НЯ и пол, страна
 
@@ -675,7 +688,5 @@ t_test_res %>%
   flextable() %>%
   set_table_properties(layout = "autofit", width = .9)
 ```
-
-
-
+Не наблюдается статистически значимых различий в количестве НЯ между разными странами и между мужчинами и женщинами.
 
