@@ -6,6 +6,9 @@ date: "2025-11-02"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(flextable)
 ```
 
 ```{r}
