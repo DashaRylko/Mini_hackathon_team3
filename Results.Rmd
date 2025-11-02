@@ -622,7 +622,7 @@ tidy_model_age %>%
                         term=="treatd2" ~ "Drug 2"
                         ),
          `exp(estimate)`=round(exp(estimate), 2),
-         CI=paste0(round(exp(conf.low), 2), " - ", round(exp(conf.high), 2))
+         `95% CI`=paste0(round(exp(conf.low), 2), " - ", round(exp(conf.high), 2))
          ) %>% 
   
   flextable() %>% 
@@ -670,7 +670,7 @@ rownames_to_column(cor_test_res, var = "Переменные") %>%
 
 
 
-#### Влияние качествнных признаков на количесвто НЯ
+#### Влияние качественных признаков на количесвто НЯ
 ```{r}
 #Количество НЯ и пол, страна
 
