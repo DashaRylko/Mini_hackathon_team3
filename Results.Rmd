@@ -522,14 +522,24 @@ b3 <- data %>%
     caption = 'Примечание: ромбом обозначены средние значения баллов',
     theme = theme(plot.title = element_text(hjust = 0.5, size = 20)))
 ```
+
 ```{r}
 #Взаимосвязь возраста пациента и кол-ва НЯ
 data %>% 
-  ggplot(aes(y = nrAdvE, x = age))+
-  geom_point(colour = 'grey20')+
-  geom_smooth(method = 'lm', se = FALSE, colour = 'purple')+
+  ggplot(aes(y = nrAdvE, x = age, colour = treat))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = FALSE)+
   scale_y_continuous(breaks=seq(0,12,2))+
   scale_x_continuous(breaks=seq(20,75,5))+
+  scale_colour_manual(
+    name = 'Тип лечения',
+    labels = c('placebo' = 'Плацебо',
+    'd1' = 'Препарат 1',
+    'd2' = 'Препарат 2'),
+    values = c('placebo' = 'grey40',
+    'd1' = 'seagreen',
+    'd2' = 'tan3')
+  )+
   labs(
     title = 'Взаимосвязь возраста пациента и количества НЯ',
     x = 'Возраст',
@@ -543,10 +553,19 @@ data %>%
 ```{r}
 #Взаимосвязь ИМТ пациента и кол-ва НЯ
 data %>% 
-  ggplot(aes(y = nrAdvE, x = BMI))+
-  geom_point(colour = 'grey20')+
-  geom_smooth(method = 'lm', se = FALSE, colour = 'purple')+
+  ggplot(aes(y = nrAdvE, x = BMI, colour  = treat))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = FALSE)+
   scale_y_continuous(breaks=seq(0,12,2))+
+  scale_colour_manual(
+    name = 'Тип лечения',
+    labels = c('placebo' = 'Плацебо',
+    'd1' = 'Препарат 1',
+    'd2' = 'Препарат 2'),
+    values = c('placebo' = 'grey40',
+    'd1' = 'seagreen',
+    'd2' = 'tan3')
+  )+
   labs(
     title = 'Взаимосвязь ИМТ пациента и количества НЯ',
     x = 'ИМТ',
