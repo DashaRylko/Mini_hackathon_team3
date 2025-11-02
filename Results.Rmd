@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2)
 library(flextable)
-library(patchwork)
+
 
 theme_custom <- theme(
     axis.text = element_text(size = 10),
@@ -31,16 +31,379 @@ data <- read.csv('data/CrohnD.csv')
 
 ## 1
 
+Описательная статистика
+```{r}
+library(officer)
 
+statistics <- list(
+  `__N/Nmiss` = ~paste0(sum(!is.na(.x)), "/", sum(is.na(.x))),
+  `__Mean (SD)` = ~ifelse(sum(!is.na(.x)) == 0, "-", paste0(round(mean(.x, na.rm = TRUE), 2), " (", round(sd(.x, na.rm = TRUE), 2), ")")),
+  `__Median` = ~ifelse(sum(!is.na(.x)) == 0, "-", median(.x, na.rm = TRUE) %>% round(2) %>% as.character()),
+  `__Q1 - Q3` = ~ifelse(sum(!is.na(.x)) == 0, "-", paste0(quantile(.x, .25, na.rm = TRUE) %>% round(2), " - ", quantile(.x, .75, na.rm = TRUE) %>% round(2))),
+  `__Min - Max` = ~ifelse(sum(!is.na(.x)) == 0, "-", paste0(min(.x, na.rm = TRUE) %>% round(2), " - ", max(.x, na.rm = TRUE) %>% round(2)))
+)
+
+data_pre <- data %>% 
+  # select(treat, where(is.numeric), -c(rownames, ID)) %>% 
+  group_by(treat) %>% 
+  summarise(across(where(is.numeric) & !c(rownames, ID), statistics)) %>% 
+  pivot_longer(!treat) %>% 
+  separate(name, into = c("Variable", "Statistics"), sep="__") %>% 
+  mutate(
+    # Variable=str_to_upper(Variable),
+    Statistics=str_remove(Statistics, "_"),
+    treat=case_when(treat=="d1" ~ "Drug 1",
+                    treat=="d2" ~ "Drug 2",
+                    treat=="placebo" ~ "Placebo")
+    ) %>%
+  pivot_wider(names_from = "Variable", values_from = "value") %>% 
+  relocate(treat, Statistics, age, weight, height, BMI, nrAdvE) %>% 
+  rename(`Number of AE`=nrAdvE, `BMI (kg/m^2)`=BMI, `Height (cm)`=height, `Weight (kg)`=weight, `Age (years)`=age,
+         `Treatment group`=treat)
+  
+
+final_table <- as_flextable(as_grouped_data(x=data_pre, groups = "Treatment group"))
+
+border_style <- fp_border(color = "black", style = "solid", width = 1)
+  
+final_table <- add_footer_lines(final_table, "Footnote: N - not missing, Nmiss - missing") %>%
+  theme_box() %>% 
+  separate_header() %>%
+  bold(j=1, i=~!is.na(`Treatment group`), bold=TRUE, part = "body") %>% 
+  bold(part = "header", bold = TRUE) %>% 
+  colformat_double(i=~is.na(`Treatment group`), j="Statistics", digits=0, big.mark = "") %>% 
+  align(i=~!is.na(`Treatment group`), align = "center") %>%
+  align(align = "center", part = "body") %>% 
+  align(align = "center", part = "header") %>% 
+  align(j=1, i=~is.na(`Treatment group`), align = "left") %>% 
+  valign(valign = "center", part = "all") %>% 
+  bg(part = "header", bg = "#a9c9fc") %>% 
+  bg(j=1, i=~!is.na(`Treatment group`), bg = "#EDEDED") %>% 
+  border(border.top = border_style,
+         border.bottom = border_style,
+         border.left = border_style,
+         border.right = border_style,
+         part = "header") %>% 
+  # merge_at(i=2, j=5:7) %>% 
+  italic(part = "footer") %>% 
+  set_table_properties(layout = "autofit", width = .9)
+
+final_table
+  
+```
 ```{r}
 
+data_tot <- data %>% 
+      mutate(treat="Total")
+
+sizes <- data_tot %>% 
+  select(where(is.character), ID) %>%
+  count(treat) %>%
+  bind_rows(
+    data %>% 
+      select(where(is.character), ID) %>%
+      count(treat)
+  )
+
+total_n <- sizes %>% 
+  filter(treat=="Total") %>% 
+  pull(n)
+
+d1_n <- sizes %>% 
+  filter(treat=="d1") %>% 
+  pull(n)
+
+d2_n <- sizes %>% 
+  filter(treat=="d2") %>% 
+  pull(n)
+
+placebo_n <- sizes %>% 
+  filter(treat=="placebo") %>% 
+  pull(n)
+
+data_count <- data %>% 
+  select(where(is.character), ID) %>% 
+  count(treat, country) %>% 
+  group_by(treat) %>% 
+  mutate(pct_group=(n/sum(n)) %>% round(4) %>% `*`(100) %>% str_c("%")) %>% 
+  ungroup() %>% 
+  mutate(variable="Country") %>%
+  rename(variable_cat=country) %>% 
+  bind_rows(
+    data %>% 
+      select(where(is.character), ID) %>% 
+      count(treat, sex) %>% 
+      group_by(treat) %>% 
+      mutate(pct_group=(n/sum(n)) %>% round(4) %>% `*`(100) %>% str_c("%")) %>% 
+      ungroup() %>% 
+      mutate(variable="Sex") %>%
+      rename(variable_cat=sex)
+  ) %>%
+  mutate(`n (%)` = paste0(n, " (", pct_group, ")"),
+         treat=case_when(treat=="d1" ~ paste0("Drug 1","\n", "N = ", {{d1_n}}, "\n", "n (%)"),
+                        treat=="d2" ~ paste0("Drug 2","\n", "N = ", {{d2_n}}, "\n", "n (%)"),
+                        treat=="placebo" ~ paste0("Placebo","\n", "N = ", {{placebo_n}}, "\n", "n (%)"))) %>% 
+  pivot_wider(id_cols = c(variable_cat, variable), names_from = treat, values_from = `n (%)`)
+  
+
+data_count_tot <- data_tot %>% 
+  select(where(is.character), ID) %>% 
+  count(treat, country) %>% 
+  group_by(treat) %>% 
+  mutate(pct_group=(n/sum(n)) %>% round(4) %>% `*`(100) %>% str_c("%")) %>%
+  ungroup() %>% 
+  mutate(variable="Country") %>%
+  rename(variable_cat=country) %>% 
+  bind_rows(
+    data_tot %>% 
+      select(where(is.character), ID) %>% 
+      count(treat, sex) %>% 
+      group_by(treat) %>% 
+      mutate(pct_group=(n/sum(n)) %>% round(4) %>% `*`(100) %>% str_c("%")) %>%
+      ungroup() %>% 
+      mutate(variable="Sex") %>%
+      rename(variable_cat=sex)
+  ) %>%
+  mutate(`n (%)` = paste0(n, " (", pct_group, ")"),
+         treat=paste0("Total","\n", "N = ", {{total_n}}, "\n", "n (%)")) %>% 
+  pivot_wider(id_cols = c(variable_cat, variable), names_from = treat, values_from = `n (%)`)
+
+data_final <- data_count %>% 
+  bind_cols(data_count_tot %>% select(-c(variable_cat, variable))) %>% 
+  relocate(variable, variable_cat) %>% 
+  rename(Category = variable_cat)
+
+final_table_cat <- as_flextable(as_grouped_data(x=data_final, groups = "variable"))
+
+border_style <- fp_border(color = "black", style = "solid", width = 1)
+  
+final_table_cat <- add_footer_lines(final_table_cat, "Footnote: Percentages are based on the number of subjects in the corresponding group") %>%
+  theme_box() %>% 
+  separate_header() %>%
+  bold(j=1, i=~!is.na(variable), bold=TRUE, part = "body") %>% 
+  bold(part = "header", bold = TRUE) %>% 
+  colformat_double(i=~is.na(variable), j="Category", digits=0, big.mark = "") %>% 
+  align(i=~!is.na(variable), align = "center") %>%
+  align(align = "center", part = "body") %>% 
+  align(align = "center", part = "header") %>% 
+  align(j=1, i=~is.na(variable), align = "left") %>% 
+  valign(valign = "center", part = "all") %>% 
+  bg(part = "header", bg = "#a9c9fc") %>% 
+  bg(j=1, i=~!is.na(variable), bg = "#EDEDED") %>% 
+  border(border.top = border_style,
+         border.bottom = border_style,
+         border.left = border_style,
+         border.right = border_style,
+         part = "header") %>% 
+  # merge_at(i=2, j=5:7) %>% 
+  italic(part = "footer") %>% 
+  set_table_properties(layout = "autofit", width = .9)
+
+final_table_cat
+
 ```
+
 
 ## 2
 
 ```{r}
+library(patchwork)
+```
+
+
+```{r}
+#Приведем типы данных
+data_types <- data %>%
+  select(-rownames) %>%
+  mutate(across(c(country, sex, treat), as.factor),
+         across(ID, as.character),
+         across(c(nrAdvE, BMI, height, age, weight),as.numeric))
+
+data_long <- data_types %>% 
+  rename(
+    "Количество НЯ" = nrAdvE,
+    "Возраст" = age,
+    "ИМТ" = BMI,
+    "Рост" = height,
+    "Вес" = weight
+  ) %>% 
+  pivot_longer(cols = where(is.numeric), names_to = "variable", values_to = "value")
 
 ```
+
+# Анализ количественных переменных
+
+```{r fig.width = 7, fig.height=4}
+# Строим гистограммы
+ggplot(data_long, aes(x = value, fill = variable)) +
+  geom_histogram(bins = 30, alpha = 0.6, color = "black") +
+  facet_wrap(~variable, scales = 'free') +
+  labs(title = "Распределения количественных признаков",
+       x = "Значение", y = "Частота", fill = "Количественная\nпеременная")
+  
+```
+Из данных графиков видим, что признак количество НЯ распределен скошенным образом и дискретно
+
+# Приведены графики для оценки средних и 95% ДИ для различных количественных признаков
+
+```{r fig.width = 7, fig.height=4}
+se <- function(x) {
+  sd(x, na.rm = TRUE) / sqrt(length(x))
+}
+
+age_plot <- data_types %>%
+  group_by(treat) %>%
+  summarise(
+    mean_age = mean(age),
+    sd = sd(age),
+    se = se(age),
+    ci_95_min = mean_age - 1.96 * se,
+    ci_95_max = mean_age + 1.96 * se
+  ) %>%
+  ggplot() +
+  geom_point(aes(x = treat, y = mean_age, color = treat)) +
+  geom_errorbar(aes(
+    x = treat,
+    y = mean_age,
+    ymin = ci_95_min,
+    ymax = ci_95_max, color = treat
+  ), width = 0.5)+
+     scale_color_brewer(palette = "Set2")+
+  labs(x = "Тип лечения", y = "Среднее возраста",color = "Лечение")
+
+BMI_plot <- data_types %>%
+  group_by(treat) %>%
+  summarise(
+    mean_BMI = mean(BMI),
+    sd = sd(BMI),
+    se = se(BMI),
+    ci_95_min = mean_BMI - 1.96 * se,
+    ci_95_max = mean_BMI + 1.96 * se
+  ) %>%
+  ggplot() +
+  geom_point(aes(x = treat, y = mean_BMI, color = treat)) +
+  geom_errorbar(aes(
+    x = treat,
+    y = mean_BMI,
+    ymin = ci_95_min,
+    ymax = ci_95_max, color = treat
+  ), width = 0.5)+
+     scale_color_brewer(palette = "Set2")+
+  labs(x = "Тип лечения", y = "Среднее ИМТ",color = "Лечение")
+
+height_plot <- data_types %>%
+  group_by(treat) %>%
+  summarise(
+    mean_height = mean(height),
+    sd = sd(height),
+    se = se(height),
+    ci_95_min = mean_height - 1.96 * se,
+    ci_95_max = mean_height + 1.96 * se
+  ) %>%
+  ggplot() +
+  geom_point(aes(x = treat, y = mean_height, color = treat)) +
+  geom_errorbar(aes(
+    x = treat,
+    y = mean_height,
+    ymin = ci_95_min,
+    ymax = ci_95_max, color = treat
+  ), width = 0.5)+
+     scale_color_brewer(palette = "Set2")+
+  labs(x = "Тип лечения", y = "Среднее роста",color = "Лечение")
+
+weight_plot <- data_types %>%
+  group_by(treat) %>%
+  summarise(
+    mean_weight = mean(weight),
+    sd = sd(weight),
+    se = se(weight),
+    ci_95_min = mean_weight - 1.96 * se,
+    ci_95_max = mean_weight + 1.96 * se
+  ) %>%
+  ggplot() +
+  geom_point(aes(x = treat, y = mean_weight, color = treat)) +
+  geom_errorbar(aes(
+    x = treat,
+    y = mean_weight,
+    ymin = ci_95_min,
+    ymax = ci_95_max, color = treat
+  ), width = 0.5)+
+     scale_color_brewer(palette = "Set2")+
+  labs(x = "Тип лечения", y = "Среднее веса",color = "Лечение")
+
+res_plot <- (age_plot|BMI_plot) / (height_plot|weight_plot)
+
+wrap_plots(res_plot) +
+  plot_annotation(title = "95% интервалы распределения количественных переменных",
+                  subtitle = "по группам лечения")
+```
+С помощью данного графика можем оценить различия в значениях количественных переменных по разным группам лечения.
+
+# Анализ номинативных переменнных
+
+```{r fig.width = 7, fig.height=4}
+(ggplot(data_types, aes(x = treat,fill = treat)) +
+  geom_bar(position = position_dodge(width = 0.8), width = 0.7, color = 'black') +
+  labs(title = "Распределение по типу лечения",
+       x = "Лечение", y = "Частота")+
+  scale_fill_brewer(palette = "Set2"))/
+((ggplot(data_types, aes(x = country, fill = treat)) +
+  geom_bar(position = position_dodge(width = 0.8), width = 0.7, color = 'black')+
+  labs(title = "Распределение по странам",
+       x = "Страна", y = "Частота", fill = "Лечение")+
+  scale_fill_brewer(palette = "Set2"))|  
+(ggplot(data_types, aes(x = sex, fill = treat)) +
+  geom_bar(position = position_dodge(width = 0.8), width = 0.7, color = 'black') +
+  labs(title = "Распределение по полу",
+       x = "Пол", y = "Частота", fill = "Лечение")+
+  scale_fill_brewer(palette = "Set2")))
+
+
+```
+Из графиков видим, что группы распределены достаточно равномерно
+
+# Анализ основного показателя (количество НЯ)
+
+```{r fig.width = 8, fig.height=3}
+(
+  ggplot(data_types, aes(
+    x = treat, y = nrAdvE, fill = treat
+  )) +
+    geom_boxplot(width = 0.5) +
+    geom_jitter(width = 0.2) +
+    theme_minimal() +
+    labs(
+      title = "Количество НЯ по типу лечения",
+      x = "Тип лечения",
+      y = "Количество НЯ",
+      fill = "Лечение"
+    ) +
+    scale_fill_brewer(palette = "Set2")
+)|
+  (data_types %>%
+     group_by(treat) %>%
+     summarise(
+       mean_nrAdvE = mean(nrAdvE),
+       sd = sd(nrAdvE),
+       se = se(nrAdvE),
+       ci_95_min = mean_nrAdvE - 1.96 * se,
+       ci_95_max = mean_nrAdvE + 1.96 * se
+     ) %>%
+     ggplot() +
+     geom_point(aes(x = treat, y = mean_nrAdvE, color = treat)) +
+     geom_errorbar(aes(
+       x = treat,
+       y = mean_nrAdvE,
+       ymin = ci_95_min,
+       ymax = ci_95_max,
+       color = treat
+     ), width = 0.5)+
+     scale_color_brewer(palette = "Set2")+
+     labs(title = "95% ДИ для среднего количества НЯ",
+          x = "Тип лечения", y = "Среднее",color = "Лечение")+
+     theme_minimal())
+```
+Из графика можно оценить распределение данной переменной. Также можем увидеть разницу в оценке среднего количества НЯ для разных групп лечения.
 
 ## 3 Визуальная оценка взаимосвязи между числом НЯ и собранными признаками пациентов
 
