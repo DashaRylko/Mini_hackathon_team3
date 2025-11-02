@@ -1,7 +1,8 @@
 ---
-title: "Results"
-output: html_document
+title: "Нежелательные явления при лечении болезни Крона"
+author: "Ирина Михайлова, Ильнара Нуриеа, Оксана Пластинина, Дарья Рылко"
 date: "2025-11-02"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
