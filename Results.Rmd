@@ -629,27 +629,24 @@ data %>%
 
 ```{r}
 #Количество НЯ и тип лечения
+library(broom)
 
-#anova
-anova_res <- aov(nrAdvE ~ treat, data = data_types)
-summary(anova_res)
+```
+```{r}
+# Пуассоновская регрессия
 
-#t-test для d1 - placebo и d2 - placebo
-data_d1 <- data_types %>% 
-  filter(treat != 'd2')
-data_d2 <- data_types %>% 
-  filter(treat != 'd1')
-
-t.test(nrAdvE ~ treat, data = data_d1)
-t.test(nrAdvE ~ treat, data = data_d2)
-
-#линейная и generalized linear model
-levels(data_types$treat)
 data_types$treat <- relevel(data_types$treat, ref = "placebo")
 
-summary(glm(nrAdvE ~ treat, data = data_types))
-summary(lm(nrAdvE ~ treat, data = data_types))
+model_treat <- glm(nrAdvE ~ treat, data = data_types, family = 'poisson')
+
+tidy_model_age <- tidy(model_treat, conf.int = TRUE) %>% 
+  mutate(across(c(estimate, std.error, statistic, conf.low, conf.high, p.value), 
+                ~ round(.x, 3)))
+tidy_model_age %>% 
+  flextable() %>% 
+  set_table_properties(layout= "autofit",width=.9)
 ```
+
 
 ```{r}
 #Количество НЯ и Возраст, Рост, Вес, ИМТ
@@ -680,6 +677,7 @@ cor_test_res <- rbind(`Количество НЯ и возраст` = data.frame
   p_value = cor_test_BMI$p.value
 ))
 rownames_to_column(cor_test_res, var = "Переменные") %>% 
+  mutate(across(c(Correlation, S_statistic, p_value),~round(.x,3))) %>% 
   flextable() %>% 
   set_table_properties(layout= "autofit",width=.9)
 
@@ -705,10 +703,15 @@ table_res_sex <- data.frame(
   CI_upper = ttest_sex$conf.int[2]
 )
 t_test_res <- rbind(`Количество НЯ и страна` = table_res_country,
-      `Количество НЯ и пол` = table_res_sex)
-rownames_to_column(t_test_res, var = "Переменные") %>% 
-  flextable() %>% 
-  set_table_properties(layout= "autofit",width=.9)
+                    `Количество НЯ и пол` = table_res_sex)
+
+t_test_res %>%
+  rownames_to_column(var = "Переменные") %>%
+  mutate(across(c(
+    t_statistic, df, p_value, CI_lower, CI_upper
+  ),  ~ round(.x, 3))) %>%
+  flextable() %>%
+  set_table_properties(layout = "autofit", width = .9)
 ```
 
 
