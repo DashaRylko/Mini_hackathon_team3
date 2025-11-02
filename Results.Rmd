@@ -405,30 +405,6 @@ wrap_plots(res_plot) +
 ```
 Из графика можно оценить распределение данной переменной. Также можем увидеть разницу в оценке среднего количества НЯ для разных групп лечения.
 
-## 3 Визуальная оценка взаимосвязи между числом НЯ и собранными признаками пациентов
-
-```{r}
-#распределение числа НЯ
-
-data %>% 
-  ggplot()+
-  geom_bar(aes(x = as.factor(nrAdvE)), fill = 'seagreen', colour = 'black')+
-  labs(
-    title = 'Распределение числа НЯ у пациентов',
-    x = 'Количество НЯ',
-    y = 'Количество пациентов'
-  )+
-  coord_cartesian(ylim = c(0, 49))+
-  scale_y_continuous(breaks=seq(0,50,5))+
-  theme(
-    panel.grid.major.y = element_line(colour = 'grey90'),
-    panel.grid.minor.y = element_line(colour = 'grey90')
-  )
-
-
-```
-Из графиков видим, что группы распределены достаточно равномерно
-
 # Анализ основного показателя (количество НЯ)
 
 ```{r fig.width = 8, fig.height=3}
@@ -491,7 +467,129 @@ data %>%
     panel.grid.major.y = element_line(colour = 'grey90'),
     panel.grid.minor.y = element_line(colour = 'grey90')
   )
+```
 
+
+```{r fig.width=15, fig.height=5}
+#распреление кол-ва НЯ в зависимости от пола и типа лечения и страны
+
+bb1 <- data %>% 
+  group_by(treat) %>% 
+  summarise(
+    'Среднее' = mean(nrAdvE)
+  )
+
+b1 <- data %>% 
+  ggplot()+
+  geom_violin(aes(x = treat, y = nrAdvE), fill = 'lightblue4', alpha =0.7)+
+  geom_boxplot(aes(x = treat, y = nrAdvE), width=0.1)+
+  geom_point(data = bb1, aes(x = treat, y = Среднее), shape = 23, size = 5, fill = 'brown3', colour = 'grey40')+
+  scale_y_continuous(breaks = seq(0,12,1))+
+  scale_x_discrete(labels= c(
+    'placebo' = 'Плацебо',
+    'd1' = 'Препарат 1',
+    'd2' = 'Препарат 2'
+  ) )+
+  labs(
+    y = 'Количество НЯ',
+    x = 'Тип лечения'
+  )+
+  theme(
+    panel.grid.major.y = element_line(colour = 'grey90'),
+    panel.grid.minor.y = element_line(colour = 'grey90')
+  )
+
+bb2 <- data %>% 
+  group_by(sex) %>% 
+  summarise(
+    'Среднее' = mean(nrAdvE)
+  )  
+
+b2 <- data %>% 
+  ggplot(aes(x = sex, y = nrAdvE))+
+  geom_violin(fill = 'sienna3', alpha =0.7)+
+  geom_boxplot(width=0.1)+
+  geom_point(data = bb2, aes(x = sex, y = Среднее), shape = 23, size = 5, fill = 'brown3', colour = 'grey40')+
+  theme(
+    axis.text.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )+
+  scale_y_continuous(breaks = seq(0,12,1))+
+  scale_x_discrete(labels= c(
+    'F' = 'Женщина',
+    'M' = 'Мужчина'))+
+  labs(
+    x = 'Пол'
+  )+
+  theme(
+    panel.grid.major.y = element_line(colour = 'grey90'),
+    panel.grid.minor.y = element_line(colour = 'grey90')
+  )
+
+bb3 <- data %>% 
+  group_by(country) %>% 
+  summarise(
+    'Среднее' = mean(nrAdvE)
+  )   
+
+b3 <- data %>% 
+  ggplot(aes(x = country, y = nrAdvE))+
+  geom_violin(fill = 'mediumpurple4', alpha =0.7)+
+  geom_boxplot(width=0.1)+
+  geom_point(data = bb3, aes(x = country, y = Среднее), shape = 23, size = 5, fill = 'brown3', colour = 'grey40')+
+  theme(
+    axis.text.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )+
+  scale_y_continuous(breaks = seq(0,12,1))+
+  scale_x_discrete(labels= c(
+    'c1' = 'Страна 1',
+    'c2' = 'Страна 2'))+
+  labs(
+    x = 'Страна'
+  )+
+  theme(
+    panel.grid.major.y = element_line(colour = 'grey90'),
+    panel.grid.minor.y = element_line(colour = 'grey90')
+  )
+
+
+
+(b1 | b2 | b3) +
+  plot_annotation(
+    title = "Распределение количества НЯ в зависимости от лечения, пола и страны пациента",
+    caption = 'Примечание: ромбом обозначены средние значения баллов',
+    theme = theme(plot.title = element_text(hjust = 0.5, size = 20)))
+```
+
+```{r}
+#Взаимосвязь возраста пациента и кол-ва НЯ
+data %>% 
+  ggplot(aes(y = nrAdvE, x = age, colour = treat))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = FALSE)+
+  scale_y_continuous(breaks=seq(0,12,2))+
+  scale_x_continuous(breaks=seq(20,75,5))+
+  scale_colour_manual(
+    name = 'Тип лечения',
+    labels = c('placebo' = 'Плацебо',
+               'd1' = 'Препарат 1',
+               'd2' = 'Препарат 2'),
+    values = c('placebo' = 'grey40',
+               'd1' = 'seagreen',
+               'd2' = 'tan3')
+  )+
+  labs(
+    title = 'Взаимосвязь возраста пациента и количества НЯ',
+    x = 'Возраст',
+    y = 'Количество НЯ'
+  )+
+  theme(
+    panel.grid = element_line(colour = 'grey90')
+  )
+```
 
 ```{r}
 #Взаимосвязь ИМТ пациента и кол-ва НЯ
