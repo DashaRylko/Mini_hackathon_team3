@@ -56,6 +56,15 @@ data_pre <- data %>%
                     treat=="d2" ~ "Drug 2",
                     treat=="placebo" ~ "Placebo")
     ) %>%
+  bind_rows(
+    data %>% 
+      mutate(treat="Total") %>% 
+      summarise(across(where(is.numeric) & !c(rownames, ID), statistics)) %>% 
+      mutate(treat="Total") %>% 
+      pivot_longer(!treat) %>% 
+      separate(name, into = c("Variable", "Statistics"), sep="__") %>% 
+      mutate(Statistics=str_remove(Statistics, "_"))
+  ) %>% 
   pivot_wider(names_from = "Variable", values_from = "value") %>% 
   relocate(treat, Statistics, age, weight, height, BMI, nrAdvE) %>% 
   rename(`Number of AE`=nrAdvE, `BMI (kg/m^2)`=BMI, `Height (cm)`=height, `Weight (kg)`=weight, `Age (years)`=age,
@@ -66,7 +75,7 @@ final_table <- as_flextable(as_grouped_data(x=data_pre, groups = "Treatment grou
 
 border_style <- fp_border(color = "black", style = "solid", width = 1)
   
-final_table <- add_footer_lines(final_table, "Footnote: N - not missing, Nmiss - missing") %>%
+final_table <- add_footer_lines(final_table, "Abbreviations: N - not missing, Nmiss - missing, SD - standard deviation") %>%
   theme_box() %>% 
   separate_header() %>%
   bold(j=1, i=~!is.na(`Treatment group`), bold=TRUE, part = "body") %>% 
@@ -86,7 +95,8 @@ final_table <- add_footer_lines(final_table, "Footnote: N - not missing, Nmiss -
          part = "header") %>% 
   # merge_at(i=2, j=5:7) %>% 
   italic(part = "footer") %>% 
-  set_table_properties(layout = "autofit", width = .9)
+  set_table_properties(layout = "autofit", width = .9)%>% 
+  set_caption("Таблица 1 – Описательная статистика количественных признаков", autonum = run_autonum(seq_id = "tab"), align_with_table=FALSE)
 
 final_table
   
@@ -177,7 +187,7 @@ final_table_cat <- as_flextable(as_grouped_data(x=data_final, groups = "variable
 
 border_style <- fp_border(color = "black", style = "solid", width = 1)
   
-final_table_cat <- add_footer_lines(final_table_cat, "Footnote: Percentages are based on the number of subjects in the corresponding group") %>%
+final_table_cat <- add_footer_lines(final_table_cat, "Note: Percentages are based on the number of subjects in the corresponding group. \nAbbreviations: c1 - Country 1, c2 - Country 2, F - Female, M - Male.") %>%
   theme_box() %>% 
   separate_header() %>%
   bold(j=1, i=~!is.na(variable), bold=TRUE, part = "body") %>% 
@@ -197,7 +207,8 @@ final_table_cat <- add_footer_lines(final_table_cat, "Footnote: Percentages are 
          part = "header") %>% 
   # merge_at(i=2, j=5:7) %>% 
   italic(part = "footer") %>% 
-  set_table_properties(layout = "autofit", width = .9)
+  set_table_properties(layout = "autofit", width = .9) %>% 
+  set_caption("Таблица 2 – Описательная статистика категориальных признаков", autonum = run_autonum(seq_id = "tab"), align_with_table=FALSE)
 
 final_table_cat
 
