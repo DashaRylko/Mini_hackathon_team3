@@ -441,6 +441,7 @@ data_types$treat <- relevel(data_types$treat, ref = "placebo")
 summary(glm(nrAdvE ~ treat, data = data_types))
 summary(lm(nrAdvE ~ treat, data = data_types))
 ```
+
 ```{r}
 #Количество НЯ и Возраст, Рост, Вес, ИМТ
 
@@ -449,18 +450,30 @@ cor_test_height <- cor.test(data_types$nrAdvE, data$height, method = "spearman")
 cor_test_weight <- cor.test(data_types$nrAdvE, data$weight, method = "spearman")
 cor_test_BMI <- cor.test(data_types$nrAdvE, data$BMI, method = "spearman")
 
-res <- data.frame()
-for(i in c(cor_test_age,cor_test_height,cor_test_weight,cor_test_BMI)){
-  res <- rbind(res,data.frame(
-  Correlation = i[estimate],
-  t_statistic = i$statistic,
-  df = i$parameter,
-  p_value = i$p.value,
-  CI_lower = i$conf.int[1],
-  CI_upper = i$conf.int[2]
+cor_test_res <- rbind(`Количество НЯ и возраст` = data.frame(
+  Correlation = cor_test_age$estimate,
+  S_statistic = cor_test_age$statistic,
+  p_value = cor_test_age$p.value
+),
+`Количество НЯ и рост` = data.frame(
+  Correlation = cor_test_height$estimate,
+  S_statistic = cor_test_height$statistic,
+  p_value = cor_test_height$p.value
+),
+`Количество НЯ и вес` = data.frame(
+  Correlation = cor_test_weight$estimate,
+  S_statistic = cor_test_weight$statistic,
+  p_value = cor_test_weight$p.value
+),
+`Количество НЯ и ИМТ` = data.frame(
+  Correlation = cor_test_BMI$estimate,
+  S_statistic = cor_test_BMI$statistic,
+  p_value = cor_test_BMI$p.value
 ))
-}
-res
+rownames_to_column(cor_test_res, var = "Переменные") %>% 
+  flextable() %>% 
+  set_table_properties(layout= "autofit",width=.9)
+
 ```
 ```{r}
 #Количество НЯ и пол, страна
@@ -482,7 +495,11 @@ table_res_sex <- data.frame(
   CI_lower = ttest_sex$conf.int[1],
   CI_upper = ttest_sex$conf.int[2]
 )
-rbind(table_res_country,table_res_sex)
+t_test_res <- rbind(`Количество НЯ и страна` = table_res_country,
+      `Количество НЯ и пол` = table_res_sex)
+rownames_to_column(t_test_res, var = "Переменные") %>% 
+  flextable() %>% 
+  set_table_properties(layout= "autofit",width=.9)
 ```
 
 
