@@ -135,3 +135,69 @@ p-value 0.012 < 0.05 - есть основания отвергнуть нуле
 С увеличением роста на 1 см число нежелательных явлений уменьшается на 0.072 (клиническая значимость?)
 
 
+
+# страна и число нежелательных явлений
+
+```{r}
+wilcox_result <- wilcox.test(nrAdvE ~ country, data = data, 
+                            conf.int = TRUE, exact = FALSE)
+print(wilcox_result)
+```
+
+p-value = 0.05814 > 0.05 - нельзя отвергнуть нулевую гипотезу 
+95% ДИ: [-1.000067; 0.000021]
+
+# пол и число нежелательных явлений
+
+```{r}
+wilcox_result_sex <- wilcox.test(nrAdvE ~ sex, data = data, 
+                            conf.int = TRUE, exact = FALSE)
+print(wilcox_result_sex)
+```
+
+p-value = 0.4644 > 0.05 - не можем отвергнуть нулевую гипотезу (H0) ( При условии, что H0 верна, вероятность наблюдать такие данные или ещё более крайние составляет около 47%. Высокая вероятность)
+
+95% ДИ: [-1.99999; 0.0000248] 
+
+# Группы лечения и число нежелательных явлений
+```{r}
+data <- data %>%
+  mutate(
+    treat = as.factor(treat),  # Преобразуем в фактор
+    treat = relevel(treat, ref = "placebo")  # Устанавливаем placebo как базу
+  )
+
+model_treat <- lm(nrAdvE ~ treat, data = data)
+tidy(model_treat, conf.int = TRUE)
+
+results %>%
+  flextable() %>%
+  set_caption("Сравнение числа НЯ между группами лечения (база: Плацебо)") %>%
+  bg(bg = "#F2F2F2", part = "header") %>%
+  bold(part = "header") %>%
+  colformat_double(digits = 4) %>%
+  print()
+```
+В группе сравнения препарата 1 и плацебо p-value = 0.174 >0.05 ДИ 95% ДИ [-2.07; 0.38] (включает 0) 
+не можем отвергнуть нулвую гипотезу
+
+В группе сравнения препарата 2 и плацебо p-value = 0.649 >0.05 ДИ 95% ДИ [-1.51; 0.94] (включает 0) 
+не можем отвергнуть нулвую гипотезу
+
+Можно рассмотреть пуассоновскую регрессию
+
+<!-- #```{r} -->
+<!-- poisson_model <- glm(nrAdvE ~ treat, data = data, family = poisson) -->
+<!-- summary(poisson_model) -->
+<!-- poisson_results <- tidy(poisson_model, conf.int = TRUE, exponentiate = TRUE) -->
+
+
+<!-- poisson_results %>% -->
+<!--   flextable() %>% -->
+<!--   set_caption("Пуассоновская регрессия: влияние лечения на число НЯ") %>% -->
+<!--   bg(bg = "#F2F2F2", part = "header") %>% -->
+<!--   bold(part = "header") %>% -->
+<!--   colformat_double(digits = 4) %>% -->
+<!--   print() -->
+<!-- ``` -->
+
